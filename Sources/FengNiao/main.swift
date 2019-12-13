@@ -79,6 +79,11 @@ let skipProjRefereceCleanOption = BoolOption(
 )
 cli.addOption(skipProjRefereceCleanOption)
 
+let isListOption = BoolOption(
+    shortFlag: "l", longFlag: "list",
+    helpMessage: "List the found unused files without asking.")
+cli.addOption(isListOption)
+
 let versionOption = BoolOption(longFlag: "version", helpMessage: "Print version.")
 cli.addOption(versionOption)
 
@@ -115,6 +120,7 @@ let isForce = isForceOption.value
 let excludePaths = excludePathOption.value ?? []
 let resourceExtentions = resourceExtOption.value ?? ["imageset", "jpg", "png", "gif", "pdf"]
 let fileExtensions = fileExtOption.value ?? ["h", "m", "mm", "swift", "xib", "storyboard", "plist"]
+let isList = isListOption.value
 
 let fengNiao = FengNiao(projectPath: projectPath,
                         excludedPaths: excludePaths,
@@ -144,12 +150,21 @@ if unusedFiles.isEmpty {
     exit(EX_OK)
 }
 
+func listUnusedFiles() {
+    for file in unusedFiles.sorted(by: { $0.size > $1.size }) {
+        print("\(file.readableSize) \(file.path.string)")
+    }
+}
+
 if !isForce {
+    if isList {
+        listUnusedFiles()
+        exit(EX_USAGE)
+    }
+    
     var result = promptResult(files: unusedFiles)
     while result == .list {
-        for file in unusedFiles.sorted(by: { $0.size > $1.size }) {
-            print("\(file.readableSize) \(file.path.string)")
-        }
+        listUnusedFiles()
         result = promptResult(files: unusedFiles)
     }
     
